@@ -9,6 +9,7 @@ module Phase5
     def initialize(req, route_params = {})
       @params = route_params
       @params.merge!(parse_www_encoded_form(req.query_string || ""))
+      @params.merge!(parse_www_encoded_form(req.body || ""))
     end
 
     def [](key)
@@ -28,12 +29,40 @@ module Phase5
     # should return
     # { "user" => { "address" => { "street" => "main", "zip" => "89436" } } }
     def parse_www_encoded_form(www_encoded_form)
-      URI::decode_www_form(www_encoded_form).to_h
+      params = {}
+      raw_params = URI::decode_www_form(www_encoded_form).to_h
+      raw_params.each do |key, value|
+        parsed = parse_key(key).reverse
+        nested = parsed.reduce(value) { |a, n| {n => a} }
+        params.my_deep_merge!(nested)
+      end
+
+      params
     end
 
     # this should return an array
     # user[address][street] should return ['user', 'address', 'street']
     def parse_key(key)
+      key.split(/\]\[|\[|\]/)
     end
+
+
+
+  end
+end
+
+class Hash
+  def my_deep_merge!(hash)
+    self.merge!(hash) do |key, oldval, newval|
+      if newval.class == Hash && oldval.class == Hash
+        #recursive case
+        oldval.my_deep_merge!(newval)
+      else
+        #base case
+        newval
+      end
+    end
+
+    self
   end
 end

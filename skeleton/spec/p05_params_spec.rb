@@ -39,6 +39,13 @@ describe Phase5::Params do
       params = Phase5::Params.new(req)
       params["user"]["address"]["street"].should == "main"
     end
+
+    it "handles nested keys with deep merging" do
+      req.query_string = "user[address][street]=main&user[address][number]=5"
+      params = Phase5::Params.new(req)
+      params["user"]["address"]["street"].should == "main"
+      params["user"]["address"]["number"].should == "5"
+    end
   end
 
   context "post body" do
